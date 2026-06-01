@@ -7,7 +7,6 @@ require('dotenv').config();
 const app = express();
 app.use(express.json());
 
-// ─── DB Pool ───────────────────────────────────────────────────────────────
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
@@ -19,7 +18,6 @@ const pool = mysql.createPool({
 
 const JWT_SECRET = process.env.JWT_SECRET || 'florasense_dev_secret_change_in_prod';
 
-// ─── Middleware: verify JWT ────────────────────────────────────────────────
 const authenticate = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -33,7 +31,6 @@ const authenticate = (req, res, next) => {
   }
 };
 
-// ─── POST /auth/register ───────────────────────────────────────────────────
 app.post('/auth/register', async (req, res) => {
   const { fName, lName, username, password, email } = req.body;
 
@@ -42,7 +39,6 @@ app.post('/auth/register', async (req, res) => {
   }
 
   try {
-    // Check for duplicate username / email
     const [existing] = await pool.query(
       'SELECT userID FROM user WHERE username = ? OR email = ?',
       [username, email]
@@ -68,7 +64,6 @@ app.post('/auth/register', async (req, res) => {
   }
 });
 
-// ─── POST /auth/login ──────────────────────────────────────────────────────
 app.post('/auth/login', async (req, res) => {
   const { username, password } = req.body;
 
@@ -99,7 +94,6 @@ app.post('/auth/login', async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    // Don't send the hashed password back
     const { password: _pw, ...safeUser } = user;
 
     res.json({ token, user: safeUser });
@@ -109,7 +103,6 @@ app.post('/auth/login', async (req, res) => {
   }
 });
 
-// ─── GET /auth/me  (protected example) ────────────────────────────────────
 app.get('/auth/me', authenticate, async (req, res) => {
   try {
     const [rows] = await pool.query(
@@ -123,10 +116,8 @@ app.get('/auth/me', authenticate, async (req, res) => {
   }
 });
 
-// ─── Health check ──────────────────────────────────────────────────────────
 app.get('/health', (_, res) => res.json({ status: 'ok', app: 'FloraSense API' }));
 
-// ─── Start ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🌿 FloraSense API running on port ${PORT}`);
